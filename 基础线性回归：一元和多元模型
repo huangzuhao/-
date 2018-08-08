@@ -1,0 +1,37 @@
+#基础线性回归：一元和多元模型
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import linear_model
+import statsmodels.api as sm
+
+os.getcwd()
+stats = pd.read_table('C:/Users/gd/Downloads/mlin40-master/regression.csv')
+point = stats.iloc[:,4]/38  #赛季总积分转换成场均积分，归一化数据【0，3】,函数iloc的筛选法（行列筛选）
+rating = stats.iloc[:,5]
+positional_rating = stats.iloc[:,[0,1,2,3]]#各个位置的场均评分
+
+rating_add = sm.add_constant(rating)
+est_simple = sm.OLS(point,rating_add).fit() #简单线性回归拟合球队所有球员在场上比赛中评分均值与球队评分的线性关系
+print(est_simple.summary())  #拟合结果的具体信息summary
+
+positional_rating_add = sm.add_constant(positional_rating)
+est_multi = sm.OLS(point,positional_rating_add).fit()  #多项式线性回归拟合，球队（球员：门将、后卫、中场、前锋赛季的平均分）和球队的表现拟合
+print(est_multi.summary())
+
+fig = plt.figure()
+
+ax1 = fig.add_subplot(121)  
+plt.plot(rating, est_simple.fittedvalues, c="r", linewidth=4)
+plt.scatter(rating, point, c="b", s=5)
+plt.xlabel("average rating")
+plt.ylabel("average point per game")
+plt.title("Simple Linear Regression")
+  
+ax2 = fig.add_subplot(122)  
+plt.scatter(range(len(point)), est_multi.model.endog, c="b", s=5)
+plt.scatter(range(len(point)), est_multi.fittedvalues, c="r", s=5)
+plt.title("Multivariate Linear Regression")
+
+plt.show()
