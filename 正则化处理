@@ -1,0 +1,48 @@
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from sklearn import linear_model,metrics
+
+ #导入数据集，并对数据集进行处理，分为数据集特征集和标签
+stats = pd.read_tabel('c:/User/gd/Downloads/mlin40-master/regression.csv')
+point = stats.iloc[:,4]
+positional_point = stats.iloc[:,[0,1,2,3]]
+
+ #1、进行线性回归拟合不用正则化处理数据集
+linear = linear_model.LinearRegression()
+linear.fit(point,positional_point)
+print('线性回归最后拟合权值和截距为：\n',linear.coef_, linear.intercept_)
+linear_pred = linear.predict(positional_rating)
+linear_error = metrics.mean_squared_error(point, linear_pred)
+####结果#####
+线性回归拟合权值参数值和截距结果为：
+ [-0.21123266  1.57223726  0.55099646  0.53368376] -15.530602996552462
+
+ #2、进行Lassor正则化处理
+lassor = linear_model.Lassor()
+lassor.fit(point, positional_point)
+print('线性回归lasso L1正则化后拟合权值和截距：\n',lasso.coef_, lasso.intercept_)
+lasso_pred = lasso.predict(positional_rating)
+lasso_error = metrics.mean_squared_error(point, lasso_pred)
+####结果#####
+线性回归lasso正则化后拟合权值和截距：
+ [0.         0.         0.14278881 0.74503449] -4.7562721031624875
+ 
+ #3、进行岭回归正则化拟合
+ridge = linear_model.Ridge(alpha = 0.05)
+ridge.fit(positional_rating, point)
+print('岭回归L2正则化权值与截距：\n',ridge.coef_, ridge.intercept_)
+ridge_pred = ridge.predict(positional_rating)
+ridge_error = metrics.mean_squared_error(point, ridge_pred)
+#####结果####
+岭回归L2正则化权值与截距：
+ [0.02804539 1.15815936 0.65716007 0.56690047] -15.232251377010472
+
+ #4、不同回归算法的拟合结果示意图（蓝色为多元线性回归，绿色为Lassor，红色为岭回归）
+plt.scatter(range(len(point)), linear_pred, c="b", s=5, label = "RMSE = {}".format(linear_error))
+plt.scatter(range(len(point)), lasso_pred, c="g", s=5, label = "RMSE = {}".format(lasso_error))
+plt.scatter(range(len(point)), ridge_pred, c="r", s=5, label = "RMSE = {}".format(ridge_error))
+plt.legend()
+plt.title("Multivariate Linear Regression with Regularization")
+plt.show()
