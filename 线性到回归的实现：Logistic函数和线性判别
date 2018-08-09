@@ -1,0 +1,56 @@
+#线性判别和逻辑斯蒂回归：线性回归到分类的实现
+import pandas as pd
+import numpy as np
+import scipy as sp
+import matplotlib.pyplot as plt
+from sklearn import discriminant_analysis, linear_model
+
+rawstat = pd.read_table('C:/Users/gd/Downloads/mlin40-master/linear separable.csv')
+stat = rawstat.iloc[:,[0,1]]  #数据要拟合的特征
+shots = rawstat.iloc[:,0]   #特征射门
+tackles = rawstat.iloc[:,1]  #特征铲球
+category = rawstat.iloc[:,2] #数据类别
+
+# # 绘制分割区域
+x_min, x_max = shots.min() - 0.2, shots.max() + 0.2  #寻找每个维度的范围
+y_min, y_max = tackles.min() - 0.2, tackles.max() + 0.2  #寻找每个维度的范围
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))  #在特征范围以0.01位步长预测每一个点的输出结果
+
+##线性判别分析拟合分类
+lda_model = discriminant_analysis.LinearDiscriminantAnalysis().fit(stat, category)
+lda_result = lda_model.predict(np.c_[xx.ravel(), yy.ravel()]) # 先形成待测样本的形式，再通过模型进行预测。
+lda_result = lda_result.reshape(xx.shape) # 将输出结果转换为和网格的矩阵形式，以便绘图
+
+# an infinite C indicates no regularization没有正则化
+##逻辑斯蒂回归分类
+logreg_model = linear_model.LogisticRegression(C=1e9).fit(stat, category)
+lr_result = logreg_model.predict(np.c_[xx.ravel(), yy.ravel()])
+lr_result = lr_result.reshape(xx.shape)
+
+#绘制区域网格图
+fig = plt.figure()
+
+ax1 = fig.add_subplot(121)  
+plt.pcolormesh(xx, yy, lda_result, cmap=plt.cm.Paired)
+plt.scatter(shots[category == 0], tackles[category == 0], c='r', marker = 'o')
+plt.scatter(shots[category == 1], tackles[category == 1], c='b', marker = '^')
+plt.title("linear discrmininant analysis result")
+plt.xlabel('shots per game')
+plt.ylabel('tackles per game')
+  
+ax2 = fig.add_subplot(122)  
+plt.pcolormesh(xx, yy, lr_result, cmap=plt.cm.Paired)
+plt.scatter(shots[category == 0], tackles[category == 0], c='r', marker = 'o')
+plt.scatter(shots[category == 1], tackles[category == 1], c='b', marker = '^')
+plt.title("LogisticRegression result")
+plt.xlabel('shots per game')
+plt.ylabel('tackles per game')
+
+plt.show()
+
+##总结
+#在解决分类问题，线性模型得回归值可以同过联系函数转为分类结果
+#线性判别模型假定数据来源于均值不同但方差相同的正态分布，通过最大化类间方差和类内方差的比值来计算线性边界
+#逻辑斯蒂回归计算的是不同类别的概率决策边界，输出的是给定数据属于不同类别的最大后验概率。
+
+
