@@ -1,0 +1,28 @@
+import numpy as np
+import pandas as pd
+import os
+from sklearn import decomposition
+import matplotlib.pyplot as plt
+
+stats = pd.read_table('C:/Users/gd/Downloads/mlin40-master/regression.csv')
+point = stats.iloc[:,4] / 38
+positional_point = stats.iloc[:,[0,1,2,3]]
+
+#主成分分析降维 sklearn.decomposition分解模块
+pca = decomposition.PCA()
+pca.fit(positional_point)
+print('四个特征主成分方差有：\n',pca.explained_variance_)
+print('四个特征主成分方差率有：\n',pca.explained_variance_ratio_)
+
+#取前两个主要成分进行拟合特征（占整体的90%以上的方差率，说明这两个主要成分已经足以解释输出的90%的变化）
+pca2 = decomposition.PCA(n_components=2)
+pca2.fit(positional_point)
+rating_new = pca2.transform(positional_point)
+
+plt.scatter(rating_new[:,0], rating_new[:,1], c = 'r', marker='o')
+plt.title('PCA with 2 components')
+plt.show()
+
+#经过变换后的数据点分散在整个二维平面上，根据横坐标的取值可以将数据点划分为两个类别，两类数据代表了两种球队的风格，就像两个高斯分布的随机数。
+
+
