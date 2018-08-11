@@ -1,0 +1,39 @@
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from sklearn import svm
+
+ratio = []#创建空列表append提取到的新特征pass_ratio 和 shots_ratio
+data = pd.read_table('C:/Users/gd/Downloads/mlin40-master/linear inseparable.csv')  #读取分析数据
+category = data.iloc[:,0]  
+pass_ratio = data.iloc[:,1] / data.iloc[:,2]  #样本实际使用的特征pass_ratio，原1、2特征比值
+shot_ratio = data.iloc[:,3] / data.iloc[:,4]  #另一个特征shots_ratio，原3、4特征比值
+
+ratio.append(pass_ratio)  #新特征append 到新特征数据集
+ratio.append(shot_ratio)
+ratio = np.array(ratio)   #创建新特征矩阵
+ratio = ratio.astype('float')  #矩阵数据集形
+
+linear_svm = svm.SVC(kernel='linear', C=1e10).fit(ratio.T,category)  #调用SVM的库模型，核函数默认线性，正则化项C设置一个较大的数，避免正则化的使用
+#拟合数据集范围min+0.05——max+0.05之间的特征值
+x_min, x_max = ratio[0].min() - 0.05, ratio[0].max() - 0.05
+y_min, y_max = ratio[1].min() - 0.05, ratio[1].max(0) - 0.05
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))
+xy = np.vstack([xx.ravel(), yy.ravel()]).T
+z = linear_svm.decision_function(xy).reshape(xx.shape)
+
+plt.scatter(pass_ratio[category == 0], shot_ratio[category == 0], c='r', marker = 'o')
+plt.scatter(pass_ratio[category == 1], shot_ratio[category == 1], c='b', marker = '^')
+plt.contour(xx, yy, z, colors='k', levels=[-1, 0, 1], alpha=0.5, linestyles=['--', '-', '--'])
+plt.title("playing style discrimination with SVM")
+plt.xlabel('pass ratio')
+plt.ylabel('shot ratio')
+plt.show()
+
+#所用的数据集为2017-2018赛季 英超联赛冠军曼城（Manchester City） 和 季军西布罗姆维奇（West Bromwich Albio） 38场联赛的数据作为样本，
+#每个样本包含每场比赛的长传数目、短传数目、头球射门、和脚下射门数 4个属性，而实际使用为前两者和后两者的之间的比值
+#分析结果，横坐标为长传数和短传数之比。纵坐标为头球射门和脚下射门之比值。可以看出两个球队的风格差异，曼城擅长习惯长传少头球少，而西布朗刚刚相反
+#但具体到具体比赛，总会有跟球队常规风格相反的情形，而这就是异常点的来由了。
+#数据集本本不是线性可分的，因而用软间隔来刻画。放大平面除了3个异常值其他划分基本正确。
+                                                   
