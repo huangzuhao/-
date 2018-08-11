@@ -31,3 +31,7 @@ plt.title("playing style discrimination with kernel SVM")
 plt.xlabel('pass ratio')
 plt.ylabel('shot ratio')
 plt.show()
+
+#和上一个SVM模型相比，加入核函数基于数据的相似性度量在高维的特征空间上找到线性决策边界，再将结果边界降维投影到低维空间的非线性决策边界。
+#计算出的相似度为决策的分类依据，物以类聚的思想
+#核函数是局部化的工具
