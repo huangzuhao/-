@@ -1,0 +1,43 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import scipy as sp
+from sklearn import neighbors
+
+ratio = []
+
+data = pd.read_table('C:/Users/gd/Downloads/mlin40-master/linear inseparable.csv')
+category = data.iloc[:,0]
+pass_ratio = data.iloc[:,1] / data.iloc[:,2]
+shot_ratio = data.iloc[:,3] /data.iloc[:,4]
+
+ratio.append(pass_ratio)
+ratio.append(shot_ratio)
+ratio = np.array(ratio)
+ratio = ratio.astype('float')
+
+x_min, x_max = ratio[0].min() - 0.05, ratio[0].max() - 0.05
+y_min, y_max = ratio[1].min() - 0.05, ratio[1].max() - 0.05
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.001), np.arange(y_min, y_max, 0.001))
+
+fig, axarr = plt.subplots(1, 3, sharex='col', sharey='row')
+
+for idx, hype_k, subtitle in zip([0,1,2],[1,7,15],['knn(k = 1)', 'knn(k = 7)', 'knn = 15']):
+    
+    knn = neighbors.KNeighborsClassifier(n_neighbors=hype_k).fit(ratio.T, category)
+    knn_result = knn.predict(np.c_[xx.ravel(), yy.ravel()])
+    knn_result = knn_result.reshape(xx.shape)
+    
+    axarr[idx].pcolormesh(xx, yy, knn_result, cmap=plt.cm.Paired)
+    axarr[idx].scatter(pass_ratio[category == 0], shot_ratio[category == 0], c='r', marker = 'o')
+    axarr[idx].scatter(pass_ratio[category == 1], shot_ratio[category == 1], c='b', marker = '^')
+    axarr[idx].set_title(subtitle)
+    
+plt.show()
+
+##和svm支持向量机一样，k近邻算法也可用来解决分类问题，利用Scikit-learn中的KNneighborsClassier类，可以计算曼城--西布朗的数据集分类边界，其中
+k的取值分别 设置为1、7、15可以看到，k=1的时候所有的数据都能分类正确。而k=15的时候误分类率超过了10%，这说明当超参数逐渐变大时，训练数据的误
+分类率不断提升，但计算的边界变得不断平滑，这是偏差-方差的典型体现。
+1、基于实例的计算方法，没有明确的泛化模型，学习样本间的关系
+2、非参数化的局部化模型，无需训练，但新数据的计算复杂度高
+3、算法性能取决于K值的选取和数据间相似度的定义
