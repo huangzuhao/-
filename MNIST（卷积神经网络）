@@ -1,0 +1,82 @@
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+import tensorflow as tf
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+def weight_variable(shape):
+    #产生初始化随机变量
+    #tf.truncated_normal函数选取随机变量正态分布的均值 stddev =0.1附近的随机值，shape为生成张量的维度
+    initial = tf.truncated_normal(shape, stddev=0.1)#用一个较小的正数来初始化偏置项，避免神经元输出恒为0的问题
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    #初始化偏差变量用一个较小的正数来初始化偏置项，避免神经元输出恒为0的问题
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
+
+def conv2d(x, W):
+    #卷积计算Wx，设定步长和边界填充
+    #卷积核大小定义和填充量padding为‘SAME’0边距的模板，保证输出输入为同样大小
+    #stride = [1,水平移动步长，竖直移动步长，1]
+    return tf.nn.conv2d(x, W, strides=[1,1,1,1],padding='SAME')
+
+def max_pool_2x2(x):
+    #池化层为2x2，步长同为stride =【1,1,1,1】
+    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+
+#在线导入读取数据集MINIST，不用预下载，one_hot的编码，把类别的标签转化为0-1组成的值例类别3：0010000000
+mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+sess = tf.InteractiveSession()
+
+#预定义输入值x、输出真实值y，占位符tf.placeholder，None表示第一个维度的值可以是任意的长度
+x = tf.placeholder(tf.float32, shape = [None, 784])
+y_ = tf.placeholder(tf.float32, shape = [None, 10])
+keep_prob = tf.placeholder(tf.float32)
+x_image = tf.reshape(x, [-1, 28, 28, 1])#x变成一个4维的向量，其中第二三维对应的图像的宽、高、最后一维代表图片的颜色通道数
+                                        #因为这里图片为灰度，颜色通道只有1个，彩色图片对应3个通道数即RGB彩色图
+
+#第一层卷积层网络结构定义:卷积核1大小为 5x5；输入通道为1；输出特征为32；激活函数为relu非线性处理；池化层为2x2，输出最大特征值减少下面特征量的计算
+W_conv1 = weight_variable([5, 5, 1, 32])
+b_conv1 = bias_variable([32])#偏差项，每一个通道对应一个偏置量
+h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)#执行卷积1并操作神经元激活函数relu（tf.nn.relu()）
+h_pool1 = max_pool_2x2(h_conv1)#池化层2x2 max pooling输出局部最大特征值
+
+#第二层卷积层网络结构定义：卷积核2大小为 5x5；输入通道为上一次输出通道数32；第二层输出通道数64；激活函数为relu非线性处理
+W_conv2 = weight_variable([5, 5, 32, 64])
+b_conv2 = bias_variable([64])
+h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+h_pool2 = max_pool_2x2(h_conv2)
+
+#全连接层1，一个有1024个的神经元的全连接层，处理整个图片
+W_fc1 = weight_variable([7*7*64,1024])
+b_fc1 = bias_variable([1024])
+h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
+h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)#减少过拟合加入dropout层，处理输出值的scale
+
+#全连接层2
+W_fc2 = weight_variable([1024, 10])
+b_fc2 = bias_variable([10])
+prediction = tf.matmul(h_fc1_drop, W_fc2) + b_fc2 #模型预测值
+
+#二次代价函数：预测值与真实值间的误差
+loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=prediction))
+#梯度下降法：数据集庞大选用AdamOptimizer优化器
+train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+#结果放在一个布尔型列表，根据tf.argmax函数返回预测值最大的索引看是否和标签索引一致，返回True 和 False
+correct_predition = tf.equal(tf.argmax(prediction,1), tf.argmax(y_,1))
+#求准确率
+accuracy = tf.reduce_mean(tf.cast(correct_predition, tf.float32))
+#保存所有结果变量
+saver = tf.train.Saver()
+sess.run(tf.global_variables_initializer())
+
+for i in range(1000):
+    batch = mnist.train.next_batch(50)
+    if i%100 == 0:
+        train_accuracy = accuracy.eval(feed_dict={x:batch[0], y_:batch[1], keep_prob:1.0})
+        print('step', i, 'training accuracy', train_accuracy)
+    train_step.run(feed_dict={x: batch[0], y_:batch[1], keep_prob:0.5})
+    
+ ##模型的准确率在最终测试集达到98%左右，或者在最后一层输出层考虑用其他的激活函数例如softmax()
