@@ -1,0 +1,59 @@
+使用keras框架来搭建VGG16的深度模型对图片进行预测
+1、导入必要的库
+from keras.models import Sequential
+from keras.layers.core import Flatten,Dense,Dropout
+from keras.layers.convolutional import Convolution2D,MaxPooling2D,ZeroPadding2D
+from keras.optimizers import SGD
+import cv2,numpy as np
+
+2、使用Keras建立VGG16模型
+
+def VGG-16(weight_path):
+    model = Sequential()
+    model.add(ZeroPadding2D((1,1),input_shape(3, 224, 224)))#卷积层输入3*224*224，三通道图像size为224 X 224
+    model.add(Convolution2D(64,3,3, activation='relu'))  #这里卷积后为 64 * 224 * 224，激活函数relu
+    model.add(ZeroPadding2D((1,1))) #图像层补0，相当于padding = 'valid'，得到原尺寸图像的尺寸
+    model.add(Convolution2D(64,3,3, activation='relu')) #再一次卷积 64 * 224 *224 size
+    model.add(MaxPooling2D((2,2), strides=(2,2))) #池化层 维度减少一半 size为 64 * 112 * 112
+    
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(128,3,3, activation='relu')) #128 * 112 * 112
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(128,3,3, activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2))) #128 * 56 * 56
+    
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(256,3,3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(256,3,3 activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2))) #256 * 28 * 28
+    
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512,3,3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512,3,3 activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2))) #512 * 14 * 14
+    
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512,3,3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512,3,3 activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2))) #512 * 7 * 7
+    
+    model.add(Flatten())  #将三维feature map 拉平到一维向量 512x7x7=25088个参数
+    model.add(Dense(4096, activation='relu')) #全连接层共有4096个神经元，这总共参数为4096 * 25088个
+    model.add(Dropout(0.5)) #0.5概率随机失活部分的神经元，防止过拟合
+    model.add(Dense(4096, activation='relu')) #再一个全连接层
+    model.add(Dropout(0.5))
+    model.add(Dense(1000, activation='softmax'))
+    
+    if weight_path:
+        model.load_weights(weights_path)
+        
+    return model
+
+model = VGG-16('vgg16_weights.h5')#这里导入训练好的模型参数
+
+sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True) #迭代器的参数设置，选择的是随机下降
+model.compile(optimizer = sgd, loss='categorical_crossentropy') 
+    
